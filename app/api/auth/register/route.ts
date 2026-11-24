@@ -1,6 +1,7 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { exec, query } from "@/lib/server/db";
+import { isTestIdentifier, TEST_OTP } from "@/lib/server/testAuth";
 import { handle, json, readJson, getJwtSecret } from "@/lib/server/http";
 
 async function generateReferralCode() {
@@ -16,11 +17,14 @@ export const POST = handle(async (req) => {
   if (!name || !mobile_number || !otp || !password)
     return json({ message: "All fields are required" }, 400);
 
-  const otpRows = await query(
-    `SELECT id FROM otps WHERE mobile_number = ? AND otp = ? AND expires_at > NOW()
-     ORDER BY id DESC LIMIT 1`,
-    [mobile_number, otp],
-  );
+  const isTest = isTestIdentifier(mobile_number) && String(otp) === TEST_OTP;
+  const otpRows = isTest
+    ? [{ id: 0 }]
+    : await query(
+        `SELECT id FROM otps WHERE mobile_number = ? AND otp = ? AND expires_at > NOW()
+         ORDER BY id DESC LIMIT 1`,
+        [mobile_number, otp],
+      );
   if (otpRows.length === 0) return json({ message: "Invalid or expired OTP" }, 400);
 
   const exist = await query("SELECT id FROM users WHERE mobile_number = ?", [mobile_number]);
