@@ -1,0 +1,133 @@
+-- Vansham MySQL schema (inferred from the backend queries)
+CREATE DATABASE IF NOT EXISTS vansham CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE vansham;
+
+CREATE TABLE IF NOT EXISTS users (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(150) NOT NULL,
+  mobile_number VARCHAR(20) NOT NULL UNIQUE,
+  password VARCHAR(255) NOT NULL,
+  role VARCHAR(20) NOT NULL DEFAULT 'user',
+  my_referral_code VARCHAR(20) UNIQUE,
+  referral_number VARCHAR(20) NULL,
+  referral_status TINYINT(1) NOT NULL DEFAULT 0,
+  payment TINYINT(1) NOT NULL DEFAULT 0,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS otps (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  mobile_number VARCHAR(20) NOT NULL,
+  otp VARCHAR(10) NOT NULL,
+  expires_at DATETIME NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  INDEX (mobile_number)
+);
+
+CREATE TABLE IF NOT EXISTS family_trees (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT NOT NULL,
+  tree_name VARCHAR(150) NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS family_members (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  tree_id INT NOT NULL,
+  parent_id INT NULL,
+  level INT NOT NULL DEFAULT 0,
+  full_name VARCHAR(150) NOT NULL,
+  gender VARCHAR(20) NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (tree_id) REFERENCES family_trees(id) ON DELETE CASCADE,
+  FOREIGN KEY (parent_id) REFERENCES family_members(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS family_spouses (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  member_id INT NOT NULL,
+  spouse_id INT NOT NULL,
+  FOREIGN KEY (member_id) REFERENCES family_members(id) ON DELETE CASCADE,
+  FOREIGN KEY (spouse_id) REFERENCES family_members(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS kul_ratna (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  tree_id INT NOT NULL,
+  member_id INT NOT NULL,
+  title VARCHAR(255),
+  description TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (tree_id) REFERENCES family_trees(id) ON DELETE CASCADE,
+  FOREIGN KEY (member_id) REFERENCES family_members(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS kul_ratna_requests (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  tree_id INT NOT NULL,
+  member_id INT NOT NULL,
+  title VARCHAR(255),
+  bio TEXT,
+  photo VARCHAR(500) NULL,
+  amount INT NOT NULL DEFAULT 999,
+  payment_status VARCHAR(20) NOT NULL DEFAULT 'PENDING',
+  payment_id VARCHAR(100) NULL,
+  status VARCHAR(20) NOT NULL DEFAULT 'PENDING',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS gallery (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT NOT NULL,
+  title VARCHAR(255),
+  description TEXT,
+  photo VARCHAR(500),
+  purpose VARCHAR(100),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS documents (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT NOT NULL,
+  title VARCHAR(255),
+  description TEXT,
+  file_url VARCHAR(500),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS dna_tests (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT NOT NULL,
+  full_name VARCHAR(150),
+  phone VARCHAR(20),
+  address TEXT,
+  amount INT NOT NULL,
+  payment_status VARCHAR(20) NOT NULL DEFAULT 'PENDING',
+  payment_id VARCHAR(100) NULL,
+  test_status VARCHAR(30) NOT NULL DEFAULT 'PENDING',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS dna_orders (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT NULL,
+  name VARCHAR(150),
+  mobile VARCHAR(20),
+  email VARCHAR(150),
+  address TEXT,
+  city VARCHAR(100),
+  zip VARCHAR(20),
+  dna_level VARCHAR(20),
+  collection_method VARCHAR(20) DEFAULT 'home',
+  razorpay_order_id VARCHAR(100),
+  razorpay_payment_id VARCHAR(100) NULL,
+  payment_status VARCHAR(20) DEFAULT 'pending',
+  order_status VARCHAR(30) DEFAULT 'created',
+  report_pdf VARCHAR(500) NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
